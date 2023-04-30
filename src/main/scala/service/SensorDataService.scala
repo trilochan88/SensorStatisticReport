@@ -18,7 +18,6 @@ trait SensorDataService {
 }
 private class SensorDataServiceImpl(fileReader: FileReader)
     extends SensorDataService {
-  implicit val intOrdering: Ordering[Int] = Ordering.Int
 
   private def processFile(): IO[SensorHumidityReport] = {
 
