@@ -1,7 +1,7 @@
 package com.ubs.tri
 
 import service.SensorDataService
-import service.util.FileReader
+import service.util.{FileReader, Util}
 
 import cats.effect.{ExitCode, IO, IOApp}
 
@@ -14,7 +14,7 @@ object Main extends IOApp {
       }
     }
     val directoryPath = args.head
-    val fileReader = FileReader(directoryPath)
+    val fileReader = FileReader(Util.getFilePathsFromFolder(directoryPath))
     val sensorDataService = SensorDataService(fileReader)
 
     sensorDataService.generateHumidityReport().flatMap { stats =>

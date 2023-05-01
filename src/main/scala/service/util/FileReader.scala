@@ -5,29 +5,21 @@ import model.{ProcessedFileData, SensorData}
 
 import cats.effect.IO
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path}
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
-import scala.jdk.CollectionConverters.IteratorHasAsScala
-import scala.util.{Failure, Success, Try}
 
 trait FileReader {
   def readFileData(): IO[ProcessedFileData]
 }
 
 object FileReader {
-  def apply(directoryPath: String): CSVFileReader = {
-
-    Try {
-      val files = Files
-        .newDirectoryStream(Paths.get(directoryPath))
-        .iterator()
-        .asScala
-        .toList
-      new CSVFileReader(files.filter(f => isCsvFile(f)))
-    } match {
-      case Failure(_)          => new CSVFileReader(List.empty[Path])
-      case Success(fileReader) => fileReader
+  def apply(filePaths: List[Path]): Option[FileReader] = {
+    val csvFiles = filePaths.filter(f => isCsvFile(f))
+    if (csvFiles.nonEmpty) {
+      Some(new CSVFileReader(csvFiles))
+    } else {
+      None
     }
   }
   def isCsvFile(file: Path): Boolean = {
@@ -38,11 +30,11 @@ object FileReader {
   }
 }
 
-class CSVFileReader(filePaths: List[Path]) extends FileReader {
+class CSVFileReader(csvFilePaths: List[Path]) extends FileReader {
   override def readFileData(): IO[ProcessedFileData] = {
     val sensorDataList = new ListBuffer[SensorData]
     var count = 0
-    filePaths.foreach { file =>
+    csvFilePaths.foreach { file =>
       count += 1
       val source = Source.fromFile(file.toString)
       val lines = source.getLines().drop(1)

@@ -16,21 +16,27 @@ import scala.collection.mutable.ListBuffer
 trait SensorDataService {
   def generateHumidityReport(): IO[SensorHumidityReport]
 }
-private class SensorDataServiceImpl(fileReader: FileReader)
+private class SensorDataServiceImpl(fileReaderOpt: Option[FileReader])
     extends SensorDataService {
 
   private def processFile(): IO[SensorHumidityReport] = {
 
-    for {
-      parsedData <- fileReader.readFileData()
-      report <- calculatedHumidityData(parsedData)
-    } yield {
-      report
+    fileReaderOpt match {
+      case Some(fileReader) =>
+        for {
+          parsedData <- fileReader.readFileData()
+          report <- calculatedHumidityData(parsedData)
+        } yield {
+          report
+        }
+      case _ => IO.raiseError(new Throwable("No data exist"))
     }
 
   }
 
-  private def calculatedHumidityData(processFileData: ProcessedFileData) = {
+  private[service] def calculatedHumidityData(
+      processFileData: ProcessedFileData
+  ) = {
     var failureMeasurementCount = 0
     val groupedData: Map[String, List[Option[Int]]] =
       processFileData.sensorDataList
@@ -113,7 +119,7 @@ private class SensorDataServiceImpl(fileReader: FileReader)
 
 }
 object SensorDataService {
-  def apply(fileReader: FileReader): SensorDataService = {
+  def apply(fileReader: Option[FileReader]): SensorDataService = {
     new SensorDataServiceImpl(fileReader)
   }
 }
