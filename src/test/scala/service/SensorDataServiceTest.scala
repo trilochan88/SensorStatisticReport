@@ -1,9 +1,11 @@
 package com.ubs.tri
 package service
 
+import model.{HighestAvgHumidity, SensorHumidityReport}
+import service.util.{FileReader, Util}
+
 import cats.effect.unsafe.implicits.global
-import com.ubs.tri.service.util.{FileReader, Util}
-import org.scalatest.funspec.{AnyFunSpec, AsyncFunSpec}
+import org.scalatest.funspec.AsyncFunSpec
 
 class SensorDataServiceTest extends AsyncFunSpec {
 
@@ -28,6 +30,35 @@ class SensorDataServiceTest extends AsyncFunSpec {
           assert(humidityReport.get.avg == "36")
           assert(humidityReport.get.min == "10")
           assert(humidityReport.get.max == "98")
+      }
+    }
+    it("When no instance of file reader, throw exception") {
+      val fileReader = FileReader(Util.getFilePathsFromFolder(""))
+      val sensorDataService = SensorDataService(fileReader)
+      val resultFut =
+        sensorDataService.generateHumidityReport().unsafeToFuture()
+      recoverToSucceededIf[Throwable] {
+        resultFut
+      }
+    }
+
+    it(
+      "When invalid csv file used"
+    ) {
+      val dirPath = getClass.getResource("/invalid_data").getPath
+      val fileReader = FileReader(Util.getFilePathsFromFolder(dirPath))
+      val sensorDataService = SensorDataService(fileReader)
+      val resultFut =
+        sensorDataService.generateHumidityReport().unsafeToFuture()
+      resultFut.map { result =>
+        assert(
+          result == SensorHumidityReport(
+            1,
+            0,
+            0,
+            List.empty[HighestAvgHumidity]
+          )
+        )
       }
     }
   }
